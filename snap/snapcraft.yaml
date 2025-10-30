@@ -1,0 +1,183 @@
+name: vlc
+adopt-info: vlc
+grade: stable
+base: core24
+summary: Read, capture, broadcast your multimedia streams
+description: |
+  VLC is a free and open source cross-platform multimedia player and
+  framework that plays most multimedia files as well as DVDs, Audio CDs,
+  VCDs, and various streaming protocols.
+  NOTE. This snap contains an untested daily build of VLC
+confinement: strict
+compression: lzo
+plugs:
+  dot-config-aacs:
+    interface: personal-files
+    read:
+    - $HOME/.config/aacs
+
+apps:
+  vlc:
+    desktop: usr/share/applications/vlc.desktop
+    command-chain: [bin/desktop-launch]
+    command: $SNAP/bin/vlc-snap-wrapper.sh
+    common-id: org.videolan.vlc
+    plugs:
+      - unity7
+      - network
+      - network-bind
+      - home
+      - opengl
+      - pulseaudio
+      - mount-observe
+      - optical-drive
+      - camera
+      - removable-media
+      - screen-inhibit-control
+      - x11
+      - desktop
+      - desktop-legacy
+      - dvb
+      - audio-playback
+      - audio-record
+      - jack1
+      - avahi-control
+      - dot-config-aacs
+    slots:
+      - mpris
+
+parts:
+  deps:
+    plugin: nil
+    stage-packages:
+      - libqt6svg6
+      - locales-all
+      - libxkbcommon0
+      - shared-mime-info
+  vlc:
+    source: /home/ken/src/gitlab/videolan
+    source-type: git
+    plugin: autotools
+    override-pull: |
+      craftctl default
+      craftctl set version=$(git describe --always HEAD)
+    override-build: |
+      sed -i 's|0\.19\.8|0\.19\.7|'  configure.ac
+      cd extras/tools
+      ./bootstrap
+      make -j $(getconf _NPROCESSORS_ONLN)
+      cd ../../
+      export PATH=$PWD/extras/tools/build/bin:$PATH
+      cd contrib && mkdir linux && cd linux
+      ../bootstrap \
+          --host=$TRIPLET \
+          --enable-libdsm \
+          --enable-dvdcss
+      if [ -v VLC_PREBUILT_CONTRIBS_URL ]; then
+          make prebuilt PREBUILT_URL="$VLC_PREBUILT_CONTRIBS_URL"
+          make -j $(getconf _NPROCESSORS_ONLN) tools
+      else
+          make list
+          make -j $(getconf _NPROCESSORS_ONLN) fetch
+          make -j $(getconf _NPROCESSORS_ONLN) -k || make -j1
+          make package
+      fi
+      cd ../../
+      export NOCONFIGURE=1
+      ./bootstrap
+      ./configure \
+          --prefix=$CRAFT_PART_INSTALL/usr \
+          --host=$TRIPLET \
+          --disable-wayland \
+          --enable-merge-ffmpeg \
+          --enable-extra-checks
+      make -j $(getconf _NPROCESSORS_ONLN)
+      make -j $(getconf _NPROCESSORS_ONLN) install
+      sed -i 's|Icon=vlc|Icon=/usr/share/icons/hicolor/256x256/apps/vlc\.png|' $CRAFT_PART_INSTALL/usr/share/applications/vlc.desktop
+      sed -i 's|TryExec=.*|TryExec=/snap/bin/vlc|' $CRAFT_PART_INSTALL/usr/share/applications/vlc.desktop
+    build-packages:
+      - git
+      - g++
+      - make
+      - autoconf
+      - libtool
+      - libtool-bin
+      - cmake
+      - automake
+      - build-essential
+      - libxcb-xfixes0-dev
+      - qt6-base-dev
+      - dpkg-dev
+      - libqt6svg6-dev
+      - libasound2-dev
+      - libavahi-client-dev
+      - libcdio-dev
+      - libdbus-1-dev
+      - libdirectfb-dev
+      #- libegl1-mesa-dev
+      - libfreetype6-dev
+      - libfribidi-dev
+      #- libgles2-mesa-dev
+      - libgnutls28-dev
+      - libidn11-dev
+      - libjack-dev
+      #- liblircclient-dev
+      - liblua5.2-dev
+      - libmtp-dev
+      - libncursesw5-dev
+      - libpng-dev
+      - libpulse-dev
+      - librsvg2-dev
+      - libsecret-1-dev
+      - libudev-dev
+      - libv4l-dev
+      - libva-dev
+      - libvdpau-dev
+      - libx11-dev
+      - libxcb-composite0-dev
+      - libxcb-damage0-dev
+      - libxcb-keysyms1-dev
+      - libxcb-randr0-dev
+      - libxcb-shm0-dev
+      - libxcb-xv0-dev
+      - libxcb1-dev
+      - libxext-dev
+      - libxi-dev
+      - libxinerama-dev
+      - libxkbcommon-x11-dev
+      - libxml2-dev
+      - libxpm-dev
+      - libzvbi-dev
+      - lua5.2
+      - pkg-config
+      - qt6-base-dev
+      - xz-utils
+      - zlib1g-dev
+      - bison
+      - flex
+      - libvulkan-dev
+      - qt6-declarative-dev
+      - libgcrypt20-dev
+      - libsystemd-dev
+    prime:
+      - -usr/lib/*/cmake/*
+      - -usr/include/*
+      - -usr/share/ECM/*
+      - -usr/share/doc/*
+      - -usr/share/man/*
+      - -usr/bin/X11
+      - -usr/lib/gcc/x86_64-linux-gnu/6.0.0
+      - -usr/lib/aspell/*
+
+  wrapper:
+    plugin: dump
+    after: [vlc]
+    source: .
+    organize:
+      vlc-snap-wrapper.sh: bin/vlc-snap-wrapper.sh
+
+  fixup-vulkan-icd-paths:
+    plugin: nil
+    after: [wrapper]
+    override-build: |
+      sed -i -E 's,(^.+"library_path": ")/.*/,\1,' $CRAFT_STAGE/usr/share/vulkan/icd.d/*.json
