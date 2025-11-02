@@ -58,6 +58,8 @@ apps:
       - dot-config-aacs
     slots:
       - mpris
+    environment:
+      DISABLE_WAYLAND: 1
 
 parts:
   alsa-mixin:
