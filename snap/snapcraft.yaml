@@ -10,6 +10,20 @@ description: |
   NOTE. This snap contains an untested daily build of VLC
 confinement: strict
 compression: lzo
+platforms:
+  amd64:
+  arm64:
+
+layout:
+  /usr/share/X11:
+    bind: $SNAP/usr/share/X11
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib
+  /usr/share/alsa:
+    bind: $SNAP/usr/share/alsa
+  /etc/asound.conf:
+    bind-file: $SNAP/etc/asound.conf
+
 plugs:
   dot-config-aacs:
     interface: personal-files
@@ -20,93 +34,162 @@ apps:
   vlc:
     desktop: usr/share/applications/vlc.desktop
     command-chain: [bin/desktop-launch]
-    command: $SNAP/bin/vlc-snap-wrapper.sh
+    command: bin/vlc-snap-wrapper.sh
     common-id: org.videolan.vlc
     plugs:
-      - unity7
+      - alsa
       - network
       - network-bind
       - home
       - opengl
-      - pulseaudio
       - mount-observe
       - optical-drive
       - camera
       - removable-media
       - screen-inhibit-control
       - x11
+      - wayland
       - desktop
       - desktop-legacy
       - dvb
       - audio-playback
       - audio-record
-      - jack1
       - avahi-control
       - dot-config-aacs
     slots:
       - mpris
 
 parts:
+  alsa-mixin:
+    plugin: dump
+    source: https://github.com/diddlesnaps/snapcraft-alsa.git
+    source-subdir: snapcraft-assets
+    build-packages:
+      - libasound2-dev
+    stage-packages:
+      - libasound2t64
+      - libasound2-plugins
+      - yad
+    stage:
+      - etc/asound.conf
+      - snap/command-chain/alsa-launch
+      - usr/bin/yad*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libasound*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libdnsfile*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libFLAC*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libjack*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libpulse*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libsamplerate*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libspeex*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libvorbis*
+      - usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/pulseaudio
   deps:
     plugin: nil
     stage-packages:
       - libqt6svg6
       - locales-all
       - libxkbcommon0
+      - xkb-data
       - shared-mime-info
+      - mesa-utils
+      - libxcb-damage0
+      - libvpx9
+  wrapper:
+    plugin: nil
+    source: snap/local
+    override-build: |
+      mkdir -p $CRAFT_PRIME/bin
+      cp -p $CRAFT_PROJECT_DIR/snap/local/desktop-launch $CRAFT_PRIME/bin/
+      cp -p $CRAFT_PROJECT_DIR/snap/local/vlc-snap-wrapper.sh $CRAFT_PRIME/bin/
+      chmod a+x $CRAFT_PRIME/bin/{desktop-launch,vlc-snap-wrapper.sh}
   vlc:
-    source: /home/ken/src/gitlab/videolan
+    source: https://code.videolan.org/videolan/vlc.git
     source-type: git
+    source-branch: master
     plugin: autotools
+    autotools-configure-parameters:
+      - --prefix=/usr
+      - --enable-qt
+      - --enable-wayland
+      - --enable-pipewire
+      - --enable-pulse
+      - --enable-avcodec
+      - --enable-avformat
+      - --enable-swscale
+      - --enable-ogg
+      - --enable-mpg123
+      - --enable-flac
+      - --enable-vorbis
+      - --enable-x264
+      - --enable-x265
+      - --enable-vpx
+      - --enable-dav1d
+      - --enable-xcb
+      - --enable-vulkan
+      - --enable-lua
+      - --disable-oss
+      - --disable-avahi
+      - --disable-jack
+      #- --disable-smbclient
+      #- --disable-samba
+      - --disable-replace-samba
     override-pull: |
       craftctl default
       craftctl set version=$(git describe --always HEAD)
     override-build: |
-      sed -i 's|0\.19\.8|0\.19\.7|'  configure.ac
-      cd extras/tools
-      ./bootstrap
-      make -j $(getconf _NPROCESSORS_ONLN)
-      cd ../../
-      export PATH=$PWD/extras/tools/build/bin:$PATH
-      cd contrib && mkdir linux && cd linux
-      ../bootstrap \
-          --host=$TRIPLET \
-          --enable-libdsm \
-          --enable-dvdcss
-      if [ -v VLC_PREBUILT_CONTRIBS_URL ]; then
-          make prebuilt PREBUILT_URL="$VLC_PREBUILT_CONTRIBS_URL"
-          make -j $(getconf _NPROCESSORS_ONLN) tools
-      else
-          make list
-          make -j $(getconf _NPROCESSORS_ONLN) fetch
-          make -j $(getconf _NPROCESSORS_ONLN) -k || make -j1
-          make package
-      fi
-      cd ../../
-      export NOCONFIGURE=1
-      ./bootstrap
-      ./configure \
-          --prefix=$CRAFT_PART_INSTALL/usr \
-          --host=$TRIPLET \
-          --disable-wayland \
-          --enable-merge-ffmpeg \
-          --enable-extra-checks
-      make -j $(getconf _NPROCESSORS_ONLN)
-      make -j $(getconf _NPROCESSORS_ONLN) install
+      craftctl default
+      sed -i 's|/root/parts/vlc/install|$SNAP|g' $CRAFT_PART_INSTALL/usr/bin/{c,n,r}vlc
       sed -i 's|Icon=vlc|Icon=/usr/share/icons/hicolor/256x256/apps/vlc\.png|' $CRAFT_PART_INSTALL/usr/share/applications/vlc.desktop
       sed -i 's|TryExec=.*|TryExec=/snap/bin/vlc|' $CRAFT_PART_INSTALL/usr/share/applications/vlc.desktop
+      find  $CRAFT_PART_INSTALL/ -type f -name '*.la' -delete
     build-packages:
-      - git
-      - g++
-      - make
-      - autoconf
+      - libsmbclient-dev
+      - meson
+      - qml6-module-qtqml-workerscript
+      - qml6-module-qtqml-models
+      - qml6-module-qtqml
+      - qml6-module-qtquick-window
+      - qml6-module-qtquick-layouts
+      - qml6-module-qtquick-controls
+      - libnotify-dev
+      - libupnp-dev
+      - libarchive-dev
+      - libpipewire-0.3-dev
+      - libmpg123-dev
+      - libvorbis-dev
+      - libvpx-dev
+      - libdav1d-dev
+      - libaudio-dev
+      - libltdl-dev
+      - libopenal-dev
+      - portaudio19-dev
+      - gettext
+      - intltool
       - libtool
-      - libtool-bin
-      - cmake
-      - automake
+      - autopoint
+      - libavformat-dev
+      - libswscale-dev
+      - qt6-shader-baker
+      - libxcursor-dev
+      - libharfbuzz-dev
+      - libx265-dev
+      - libx264-dev
+      - qt6-wayland-dev
+      - qt6-qpa-plugins
+      - qt6-declarative-dev
+      - qt6-base-private-dev
+      - qt6-declarative-dev-tools
+      - qt6-quick3d-dev-tools
+      - qt6-tools-dev-tools
+      - qt6-base-dev
+      - libflac-dev
+      - libogg-dev
+      - wayland-protocols
+      - git
+      - make
       - build-essential
       - libxcb-xfixes0-dev
-      - qt6-base-dev
       - dpkg-dev
       - libqt6svg6-dev
       - libasound2-dev
@@ -120,13 +203,12 @@ parts:
       #- libgles2-mesa-dev
       - libgnutls28-dev
       - libidn11-dev
-      - libjack-dev
+      #- libjack-dev
       #- liblircclient-dev
       - liblua5.2-dev
       - libmtp-dev
       - libncursesw5-dev
       - libpng-dev
-      - libpulse-dev
       - librsvg2-dev
       - libsecret-1-dev
       - libudev-dev
@@ -145,39 +227,97 @@ parts:
       - libxi-dev
       - libxinerama-dev
       - libxkbcommon-x11-dev
-      - libxml2-dev
+      #- libxml2-dev
       - libxpm-dev
       - libzvbi-dev
       - lua5.2
       - pkg-config
-      - qt6-base-dev
       - xz-utils
       - zlib1g-dev
       - bison
       - flex
       - libvulkan-dev
-      - qt6-declarative-dev
       - libgcrypt20-dev
       - libsystemd-dev
+    stage-packages:
+      - libdrm2
+      - qt6-image-formats-plugins
+      - libqt6svg6
+      - qt6-wayland
+      - qml6-module-qtqml-workerscript
+      - qml6-module-qtqml-models
+      - qml6-module-qtqml
+      - qml6-module-qtquick-window
+      - qml6-module-qtquick-layouts
+      - qml6-module-qtquick-controls
+      - qml6-module-qtquick-templates
+      - libsmbclient
+      - libproxy1v5
+      - libxinerama1
+      - libxpm4
+      - libnotify4
+      - libixml11t64
+      - libupnp17t64
+      - libarchive13t64
+      - libidn12
+      - libx264-164
+      - libx265-199
+      - libharfbuzz0b
+      - libqt6qml6
+      - libqt6qmlcore6
+      - libqt6qmllocalstorage6
+      - libqt6qmlmodels6
+      - libqt6qmlworkerscript6
+      - libqt6quick6
+      - libqt6quickcontrols2-6
+      - libqt6quickcontrols2impl6
+      - libqt6quickdialogs2-6
+      - libqt6quickdialogs2quickimpl6
+      - libqt6quickdialogs2utils6
+      - libqt6quicklayouts6
+      - libqt6quickparticles6
+      - libqt6quickshapes6
+      - libqt6quicktemplates2-6
+      - libqt6quickwidgets6
+      - libva-wayland2
+      - libxcb-xv0
+      - libatomic1
+      - libavahi-common3
+      - libavcodec-extra60
+      - libavcodec60
+      - libavformat-extra60
+      - libavformat60
+      - libavutil58
+      - libfribidi0
+      - libgl1
+      #- libjack-jackd2-0
+      #- libjack0
+      - liblua5.2-0
+      - libmtp9t64
+      - librsvg2-2
+      - libsecret-1-0
+      - libswscale7
+      - libxcb-composite0
+      - libzvbi0t64
+      #- pipewire-jack
+      - primus-libs
+      - libflac12t64
+      - libflac++10
+      - liboggplay1
+      - libqt6webenginecore6-bin
+      - libxcursor1
+      - libpulse0
+      - libpipewire-0.3-0t64
     prime:
-      - -usr/lib/*/cmake/*
-      - -usr/include/*
-      - -usr/share/ECM/*
-      - -usr/share/doc/*
-      - -usr/share/man/*
+      - -usr/lib/*/cmake
+      - -usr/include
+      - -usr/share/ECM
+      - -usr/share/doc
+      - -usr/share/man
       - -usr/bin/X11
-      - -usr/lib/gcc/x86_64-linux-gnu/6.0.0
-      - -usr/lib/aspell/*
-
-  wrapper:
-    plugin: dump
-    after: [vlc]
-    source: .
-    organize:
-      vlc-snap-wrapper.sh: bin/vlc-snap-wrapper.sh
-
-  fixup-vulkan-icd-paths:
-    plugin: nil
-    after: [wrapper]
-    override-build: |
-      sed -i -E 's,(^.+"library_path": ")/.*/,\1,' $CRAFT_STAGE/usr/share/vulkan/icd.d/*.json
+      - -usr/lib/gcc
+      - -usr/lib/aspell
+      - -usr/lib/*/qt5
+      - -usr/lib/*/*Qt5*
+      - -usr/lib/carla*
+      - -usr/lib/python3/dist-packages/PyQt5
