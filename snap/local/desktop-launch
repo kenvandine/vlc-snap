@@ -557,12 +557,12 @@ ln -sfn $REALHOME/.config/ibus/bus $IBUS_CONFIG_PATH
 #############################
 
 # Add QT_PLUGIN_PATH (Qt Modules).
-prepend_dir QT_QPA_PLATFORM_PLUGIN_PATH $RUNTIME/usr/lib/$ARCH/qt6/plugins/platforms
-append_dir QT_PLUGIN_PATH "$RUNTIME/usr/lib/$ARCH/qt6/plugins"
+prepend_dir QT_QPA_PLATFORM_PLUGIN_PATH $RUNTIME/usr/lib/$ARCH/qt5/plugins/platforms
+append_dir QT_PLUGIN_PATH "$RUNTIME/usr/lib/$ARCH/qt5/plugins"
 append_dir QT_PLUGIN_PATH "$RUNTIME/usr/lib/$ARCH/plugins"
 append_dir QT_PLUGIN_PATH "$RUNTIME/usr/lib/$ARCH"
 # And QML2_IMPORT_PATH (Qt Modules).
-append_dir QML2_IMPORT_PATH "$RUNTIME/usr/lib/$ARCH/qt6/qml"
+append_dir QML2_IMPORT_PATH "$RUNTIME/usr/lib/$ARCH/qt5/qml"
 append_dir QML2_IMPORT_PATH "$RUNTIME/usr/lib/$ARCH/qml"
 
 # Qt style breeze
@@ -577,7 +577,7 @@ else
   # Should check if a X11 $DISPLAY variable is set and accessible
   export QT_QPA_PLATFORM=xcb
   if ! [ -v QT_QPA_PLATFORMTHEME ] || [ -z "${QT_QPA_PLATFORMTHEME}" ]; then
-    export QT_QPA_PLATFORMTHEME=appmenu-qt6
+    export QT_QPA_PLATFORMTHEME=appmenu-qt5
   fi
 fi
 
@@ -596,7 +596,7 @@ export KDE_FORK_SLAVES=1
 export KF6_LIBEXEC_DIR="$RUNTIME/usr/lib/$ARCH/libexec/kf6"
 
 # Fix locating the QtWebEngineProcess executable
-export QTWEBENGINEPROCESS_PATH=$RUNTIME/usr/lib/qt6/libexec/QtWebEngineProcess
+export QTWEBENGINEPROCESS_PATH=$RUNTIME/usr/lib/qt5/libexec/QtWebEngineProcess
 
 ###############################
 # Mark update and exec binary #
