@@ -87,14 +87,71 @@ parts:
   deps:
     plugin: nil
     stage-packages:
+      - libarchive13t64
+      - libatomic1
+      - libavahi-common3
+      - libavcodec-extra60
+      - libavcodec60
+      - libavformat-extra60
+      - libavformat60
+      - libavutil58
+      - libdrm2
+      - libflac++10
+      - libflac12t64
+      - libfribidi0
+      - libgl1
+      - libgtk-3-0t64
+      - libharfbuzz0b
+      - libidn12
+      - libixml11t64
+      - liblua5.2-0
+      - libmtp9t64
+      - libnotify4
+      - liboggplay1
+      - libpipewire-0.3-0t64
+      - libproxy1v5
+      - libpulse0
+      - libqt5core5a
+      - libqt5core5t64
+      - libqt5gui5-gles
+      - libqt5gui5t64
+      - libqt5svg5
+      - libqt5widgets5t64
+      - libqt5x11extras5
       - libqt6svg6
-      - locales-all
-      - libxkbcommon0
-      - xkb-data
-      - shared-mime-info
-      - mesa-utils
-      - libxcb-damage0
+      - librsvg2-2
+      - libsecret-1-0
+      - libsmbclient
+      - libswscale7
+      - libupnp17t64
+      - libva-wayland2
       - libvpx9
+      - libx264-164
+      - libx265-199
+      - libxcb-composite0
+      - libxcb-damage0
+      - libxcb-xv0
+      - libxcursor1
+      - libxinerama1
+      - libxkbcommon0
+      - libxpm4
+      - libzvbi0t64
+      - locales-all
+      - mesa-utils
+      - primus-libs
+      - shared-mime-info
+      - xkb-data
+    prime:
+      - -usr/lib/*/cmake
+      - -usr/include
+      - -usr/share/ECM
+      - -usr/share/doc
+      - -usr/share/man
+      - -usr/bin/X11
+      - -usr/lib/gcc
+      - -usr/lib/aspell
+      - -usr/lib/carla*
+      - -usr/lib/python3/dist-packages/PyQt5
   wrapper:
     plugin: nil
     source: snap/local
@@ -131,8 +188,6 @@ parts:
       - --disable-oss
       - --disable-avahi
       - --disable-jack
-      #- --disable-smbclient
-      #- --disable-samba
       - --disable-replace-samba
     override-pull: |
       craftctl default
@@ -144,151 +199,85 @@ parts:
       sed -i 's|TryExec=.*|TryExec=/snap/bin/vlc|' $CRAFT_PART_INSTALL/usr/share/applications/vlc.desktop
       find  $CRAFT_PART_INSTALL/ -type f -name '*.la' -delete
     build-packages:
-      - qtbase5-dev
-      - qtdeclarative5-dev
-      - qtbase5-private-dev
-      - libqt5svg5-dev
-      - libqt5widgets5t64
-      - libqt5waylandclient5-dev
-      - libqt5x11extras5-dev
-      - libsmbclient-dev
-      - meson
-      - libnotify-dev
-      - libupnp-dev
-      - libarchive-dev
-      - libpipewire-0.3-dev
-      - libmpg123-dev
-      - libvorbis-dev
-      - libvpx-dev
-      - libdav1d-dev
-      - libaudio-dev
-      - libltdl-dev
-      - libopenal-dev
-      - portaudio19-dev
-      - gettext
-      - intltool
-      - libtool
       - autopoint
-      - libavformat-dev
-      - libswscale-dev
-      - libxcursor-dev
-      - libharfbuzz-dev
-      - libx265-dev
-      - libx264-dev
-      - libflac-dev
-      - libogg-dev
-      - wayland-protocols
-      - git
-      - make
+      - bison
       - build-essential
-      - libxcb-xfixes0-dev
       - dpkg-dev
+      - flex
+      - gettext
+      - git
+      - intltool
+      - libarchive-dev
       - libasound2-dev
+      - libaudio-dev
       - libavahi-client-dev
+      - libavformat-dev
       - libcdio-dev
+      - libdav1d-dev
       - libdbus-1-dev
       - libdirectfb-dev
-      #- libegl1-mesa-dev
+      - libflac-dev
       - libfreetype6-dev
       - libfribidi-dev
-      #- libgles2-mesa-dev
+      - libgcrypt20-dev
       - libgnutls28-dev
+      - libharfbuzz-dev
       - libidn11-dev
-      #- libjack-dev
-      #- liblircclient-dev
+      - libltdl-dev
       - liblua5.2-dev
+      - libmpg123-dev
       - libmtp-dev
       - libncursesw5-dev
+      - libnotify-dev
+      - libogg-dev
+      - libopenal-dev
+      - libpipewire-0.3-dev
       - libpng-dev
+      - libpulse-dev
+      - libqt5svg5-dev
+      - libqt5waylandclient5-dev
+      - libqt5widgets5t64
+      - libqt5x11extras5-dev
       - librsvg2-dev
       - libsecret-1-dev
+      - libsmbclient-dev
+      - libswscale-dev
+      - libsystemd-dev
+      - libtool
       - libudev-dev
+      - libupnp-dev
       - libv4l-dev
       - libva-dev
       - libvdpau-dev
+      - libvorbis-dev
+      - libvpx-dev
+      - libvulkan-dev
       - libx11-dev
+      - libx264-dev
+      - libx265-dev
       - libxcb-composite0-dev
       - libxcb-damage0-dev
       - libxcb-keysyms1-dev
       - libxcb-randr0-dev
       - libxcb-shm0-dev
+      - libxcb-xfixes0-dev
       - libxcb-xv0-dev
       - libxcb1-dev
+      - libxcursor-dev
       - libxext-dev
       - libxi-dev
       - libxinerama-dev
       - libxkbcommon-x11-dev
-      #- libxml2-dev
       - libxpm-dev
       - libzvbi-dev
       - lua5.2
+      - make
+      - meson
       - pkg-config
+      - portaudio19-dev
+      - qtbase5-dev
+      - qtbase5-private-dev
+      - qtdeclarative5-dev
+      - wayland-protocols
       - xz-utils
       - zlib1g-dev
-      - bison
-      - flex
-      - libvulkan-dev
-      - libgcrypt20-dev
-      - libsystemd-dev
-      - libpulse-dev
-    stage-packages:
-      - libdrm2
-      - libsmbclient
-      - libproxy1v5
-      - libxinerama1
-      - libxpm4
-      - libnotify4
-      - libixml11t64
-      - libupnp17t64
-      - libarchive13t64
-      - libidn12
-      - libx264-164
-      - libx265-199
-      - libharfbuzz0b
-      - libva-wayland2
-      - libxcb-xv0
-      - libatomic1
-      - libavahi-common3
-      - libavcodec-extra60
-      - libavcodec60
-      - libavformat-extra60
-      - libavformat60
-      - libavutil58
-      - libfribidi0
-      - libgl1
-      - libgtk-3-0t64
-      #- libjack-jackd2-0
-      #- libjack0
-      - liblua5.2-0
-      - libmtp9t64
-      - librsvg2-2
-      - libsecret-1-0
-      - libswscale7
-      - libxcb-composite0
-      - libzvbi0t64
-      #- pipewire-jack
-      - primus-libs
-      - libflac12t64
-      - libflac++10
-      - liboggplay1
-      - libxcursor1
-      - libpulse0
-      - libpipewire-0.3-0t64
-      - libqt5widgets5t64
-      - libqt5gui5t64
-      - libqt5svg5
-      - libqt5core5a
-      - libqt5core5t64
-      - libqt5gui5-gles
-      - libqt5x11extras5
-    prime:
-      - -usr/lib/*/cmake
-      - -usr/include
-      - -usr/share/ECM
-      - -usr/share/doc
-      - -usr/share/man
-      - -usr/bin/X11
-      - -usr/lib/gcc
-      - -usr/lib/aspell
-      - -usr/lib/carla*
-      - -usr/lib/python3/dist-packages/PyQt5
