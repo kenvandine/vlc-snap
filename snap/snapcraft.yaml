@@ -230,6 +230,7 @@ parts:
       - libvulkan-dev
       - libgcrypt20-dev
       - libsystemd-dev
+      - libpulse-dev
     stage-packages:
       - libdrm2
       - libsmbclient
