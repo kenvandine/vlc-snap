@@ -256,6 +256,7 @@ parts:
       - libavutil58
       - libfribidi0
       - libgl1
+      - libgtk-3-0t64
       #- libjack-jackd2-0
       #- libjack0
       - liblua5.2-0
